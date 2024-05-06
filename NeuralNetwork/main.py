@@ -6,9 +6,12 @@ import time
 import numpy as np
 import matplotlib.pyplot as plt
 
-from tensorflow.keras.callbacks import ModelCheckpoint
 from utils import DataConverter, DataLoader
-from model import MuseGAN
+import model
+import tensorflow as tf
+from tensorflow.keras.callbacks import ModelCheckpoint
+from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.initializers import RandomNormal
 
 
 #################
@@ -24,16 +27,17 @@ COUNT_NOTES = 75
 
 BATCH_SIZE = 64
 NOISE_LENGTH = 32
-DISCRIMINATOR_STEPS = 3
+DISCRIMINATOR_STEPS = 5
 GRADIENT_PENALTY_WEIGHT = 10
 DISCRIMINATOR_LEARNING_RATE = 0.001
 GENERATOR_LEARNING_RATE = 0.001
 ADAM_BETA_1 = 0.5
 ADAM_BETA_2 = 0.9
-EPOCHS = 5000
+EPOCHS = 1000
 
 LOAD_MODEL = False
 REFACTOR_DATA = False
+FIT_MODEL = True
 DATA_FILENAME = "dataset"
 RAW_DATA_DIR_NAME = "LakhMidi"
 TAGS_FILE_PATH = os.path.join("./datasets/RefactorData/data/dataset.txt")
@@ -54,7 +58,7 @@ def reshape_dataset(data, COUNT_SONGS, COUNT_BARS, COUNT_STEPS_PER_BAR, COUNT_TR
 
 # Построение графиков потерь
 def plot_graphs(discriminator_loss, generator_loss):
-    fig, ax =  plt.subplots(figsize=(16, 9),ncols=1, nrows=2)
+    fig, ax = plt.subplots(figsize=(16, 9), ncols=1, nrows=2)
     ax[0].plot(discriminator_loss, 'b')
     ax[0].plot(range(len(discriminator_loss)), [0]*len(discriminator_loss), color='black', linestyle='dashed')
     ax[0].set_ylabel("discriminator_loss", fontsize=14)
@@ -84,38 +88,68 @@ if (REFACTOR_DATA):
 data, tags = DataLoader(DATA_FILENAME).get_dataset()
 data = reshape_dataset(data, COUNT_SONGS, COUNT_BARS, COUNT_STEPS_PER_BAR, COUNT_TRACKS, COUNT_NOTES)
 
-
-
 #########################
 ### Модель и обучение ###
 #########################
 
-callback = ModelCheckpoint(
-    filepath="./checkpoint/checkpoint_{epoch:02d}/checkpoint.weights.h5",
+initializer = RandomNormal(mean=0.0, stddev=0.02)
+
+callback_сheckpoint = ModelCheckpoint(
+    filepath="./checkpoint/checkpoint_{epoch:02d}/checkpoint.ckpt",
     save_weights_only=True,
     save_freq=100,
     verbose=0,
 )
 
+if (LOAD_MODEL):
+    network = model.MuseGAN(
+        discriminator=model.discriminator_initialize(
+            initializer, COUNT_BARS, COUNT_STEPS_PER_BAR, COUNT_NOTES, COUNT_TRACKS
+        ),
+        generator=model.generator_initialize(
+            initializer, NOISE_LENGTH, COUNT_TRACKS, COUNT_BARS, COUNT_STEPS_PER_BAR, COUNT_NOTES
+        ),
+        noise_length=NOISE_LENGTH,
+        count_tracks=COUNT_TRACKS,
+        discriminator_steps=DISCRIMINATOR_STEPS,
+        gradient_penalty_weight=GRADIENT_PENALTY_WEIGHT
+    )
+    network.load_weights("./weights/checkpoint.ckpt")
+else:
+    network = model.MuseGAN(
+        discriminator=model.discriminator_initialize(
+            initializer, COUNT_BARS, COUNT_STEPS_PER_BAR, COUNT_NOTES, COUNT_TRACKS
+        ),
+        generator=model.generator_initialize(
+            initializer, NOISE_LENGTH, COUNT_TRACKS, COUNT_BARS, COUNT_STEPS_PER_BAR, COUNT_NOTES
+        ),
+        noise_length=NOISE_LENGTH,
+        count_tracks=COUNT_TRACKS,
+        discriminator_steps=DISCRIMINATOR_STEPS,
+        gradient_penalty_weight=GRADIENT_PENALTY_WEIGHT
+    )
 
-model = MuseGAN(NOISE_LENGTH,
-                DISCRIMINATOR_STEPS,
-                GRADIENT_PENALTY_WEIGHT,
-                COUNT_BARS,
-                COUNT_TRACKS,
-                COUNT_STEPS_PER_BAR,
-                COUNT_NOTES,
-                True)
+    network.compile(
+        discriminator_optimizer=Adam(
+            DISCRIMINATOR_LEARNING_RATE,
+            ADAM_BETA_1,
+            ADAM_BETA_2
+        ),
+        generator_optimizer=Adam(
+            GENERATOR_LEARNING_RATE,
+            ADAM_BETA_1,
+            ADAM_BETA_2
+        )
+    )
 
-model.compile(DISCRIMINATOR_LEARNING_RATE,
-              GENERATOR_LEARNING_RATE,
-              ADAM_BETA_1,
-              ADAM_BETA_2)
-
-history = model.fit(
-    data,
-    epochs=101,
-    callbacks=[callback]
-)
-
-plot_graphs(history.history['discriminator_loss'], history.history['generator_loss'])
+if (FIT_MODEL):
+    history = network.fit(
+        data,
+        epochs=EPOCHS,
+        callbacks=[callback_сheckpoint]
+    )
+    with open('generator_losses.txt', 'a') as file:
+        file.write(','.join([str(item) for item in history.history['generator_loss']]))
+    with open('discriminator_losses.txt', 'a') as file:
+        file.write(','.join([str(item) for item in history.history['discriminator_loss']]))
+    plot_graphs(history.history['discriminator_loss'], history.history['generator_loss'])

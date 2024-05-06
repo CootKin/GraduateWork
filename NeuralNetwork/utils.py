@@ -42,7 +42,8 @@ class DataConverter:
                 shutil.copy(os.path.join(dir_name, file), self.__temp_path)
         with open("datasets/to_delete.txt") as file:
             for line in file:
-                os.remove(os.path.join(f"./datasets/RefactorData/temp/{line.strip('\n')}"))
+                strip_line = line.strip('\n')
+                os.remove(os.path.join(f"./datasets/RefactorData/temp/{strip_line}"))
         print("log_message: files was extracted\n")
 
     # Удаляет из midi файлов перкуссионные дорожки и дорожки с unpitched нотами
