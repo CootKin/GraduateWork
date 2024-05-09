@@ -1,0 +1,76 @@
+#bg-image-main {
+    background-image: url("../images/background.jpg");
+    margin: 0;
+}
+
+.button-link-black {
+    color: black;
+    text-decoration: none;
+}
+
+.button-link-white {
+    color: white;
+    text-decoration: none;
+}
+
+.form-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+}
+
+.form {
+    background-color: rgba(0, 0, 0, 0.7);
+    padding: 20px;
+    border-radius: 10px;
+    width: 100%;
+    max-width: 400px;
+}
+
+.red-star {
+    color: red;
+}
+
+#tokens {
+    color: white;
+    margin-top: auto;
+    margin-bottom: auto;
+}
+
+.form-container-generate {
+    background-color: rgba(0, 0, 0, 0.7);
+    padding: 20px;
+    border-radius: 10px;
+}
+
+.form-generate {
+    padding: 20px;
+}
+
+.form-check-input:checked {
+    background-color: rgba(255, 193, 7);
+    border-color: rgba(255, 193, 0.7);
+}
+
+#generate-button:active {
+    disabled="disabled";
+}
+
+.progress-bar {
+    animation: fillProgressBar 7s forwards;
+}
+
+@keyframes fillProgressBar {
+    0% {
+        width: 0%;
+    }
+    100% {
+        width: 100%;
+    }
+}
+
+.navbar-light .navbar-nav .nav-link {
+    color: #234512;
+}
+

@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+
+
+{% block title %}
+Главная
+{% endblock %}
+
+{% block alert %}
+<body id="bg-image-main" class="bg-image">
+{% endblock %}
+
+{% block body %}
+<div class="container mt-5">
+  <div class="col-6 mx-auto form-container-generate text-center">
+      <h1 style="color: white; ">Генерация</h1>
+      <form class="form-generate" method="post">
+          <button type="submit" id="generate-button" class="btn btn-lg btn-warning me-2 auth-button mt-1 col-8" onclick="generate()">Сгенерировать партитуру</button>
+          <div class="row text-start mt-4 text-white">
+              <div class="form-check col-md-6 mb-3">
+                  {% if checkbox1=="True" %}
+                  <input class="form-check-input" name="checkbox1" checked="checked" type="checkbox" id="checkbox1">
+                  {% else %}
+                  <input class="form-check-input" name="checkbox1" type="checkbox" id="checkbox1">
+                  {% endif %}
+                  <label class="form-check-label" for="checkbox1">Зафиксировать стиль</label>
+              </div>
+              <div class="form-check col-md-6 mb-3">
+                  {% if checkbox2=="True" %}
+                  <input class="form-check-input" name="checkbox2" checked="checked" type="checkbox" id="checkbox2">
+                  {% else %}
+                  <input class="form-check-input" name="checkbox2" type="checkbox" id="checkbox2">
+                  {% endif %}
+                  <label class="form-check-label" for="checkbox2">Зафиксировать мелодию</label>
+              </div>
+          </div>
+          <div class="row text-start text-white">
+              <div class="form-check col-md-6 mb-3">
+                  {% if checkbox3=="True" %}
+                  <input class="form-check-input" name="checkbox3" checked="checked" type="checkbox" id="checkbox3">
+                  {% else %}
+                  <input class="form-check-input" name="checkbox3" type="checkbox" id="checkbox3">
+                  {% endif %}
+                  <label class="form-check-label" for="checkbox3">Зафиксировать стиль дорожек</label>
+              </div>
+              <div class="form-check col-md-6 mb-3">
+                  {% if checkbox4=="True" %}
+                  <input class="form-check-input" name="checkbox4" checked="checked" type="checkbox" id="checkbox4">
+                  {% else %}
+                  <input class="form-check-input" name="checkbox4" type="checkbox" id="checkbox4">
+                  {% endif %}
+                  <label class="form-check-label" for="checkbox4">Зафиксировать гармонии</label>
+              </div>
+          </div>
+      </form>
+      {% if message=="download_active" %}
+      <form class="form-generate" method="post">
+          <div class="text-end mt-4">
+              <input type="hidden" value="download" name="is_download">
+              <button type="submit" class="btn btn-outline-light me-2 col-4 auth-button">Скачать</button>
+          </div>
+      </form>>
+      {% endif %}
+  </div>
+</div>
+{% endblock %}

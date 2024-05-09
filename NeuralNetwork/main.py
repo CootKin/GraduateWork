@@ -35,7 +35,7 @@ ADAM_BETA_1 = 0.5
 ADAM_BETA_2 = 0.9
 EPOCHS = 1000
 
-LOAD_MODEL = False
+LOAD_MODEL = True
 REFACTOR_DATA = False
 FIT_MODEL = True
 DATA_FILENAME = "dataset"
@@ -114,7 +114,19 @@ if (LOAD_MODEL):
         discriminator_steps=DISCRIMINATOR_STEPS,
         gradient_penalty_weight=GRADIENT_PENALTY_WEIGHT
     )
-    network.load_weights("./weights/checkpoint.ckpt")
+    network.compile(
+        discriminator_optimizer=Adam(
+            DISCRIMINATOR_LEARNING_RATE,
+            ADAM_BETA_1,
+            ADAM_BETA_2
+        ),
+        generator_optimizer=Adam(
+            GENERATOR_LEARNING_RATE,
+            ADAM_BETA_1,
+            ADAM_BETA_2
+        )
+    )
+    network.load_weights("./checkpoint/checkpoint_1000/checkpoint.ckpt")
 else:
     network = model.MuseGAN(
         discriminator=model.discriminator_initialize(
