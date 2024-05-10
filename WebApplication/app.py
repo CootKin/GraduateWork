@@ -62,6 +62,16 @@ class CurrentUserInfo:
         self.count_generated_files = count_generated_files
         self.count_tokens_per_minute = count_tokens_per_minute
 
+    def reset(self):
+        self.user_id = None
+        self.user_name = None
+        self.user_login = None
+        self.user_current_tokens = None
+        self.generation_cost = None
+        self.creation_date = None
+        self.count_generated_files = None
+        self.count_tokens_per_minute = None
+
     def set_new_user_info(self, user_id, user_name, user_login, user_current_tokens, generation_cost, creation_date, count_generated_files, count_tokens_per_minute):
         self.user_id = user_id
         self.user_name = user_name
@@ -90,6 +100,14 @@ class CurrentFileInfo:
         self.generation_params = generation_params
         self.file_size = file_size
 
+    def reset(self):
+        self.file_id = None
+        self.file_name = None
+        self.user_id = None
+        self.generation_date = None
+        self.generation_params = None
+        self.file_size = None
+
     def set_new_file_info(self, file_id, file_name, user_id, generation_date, generation_params, file_size):
         self.file_id = file_id
         self.file_name = file_name
@@ -107,6 +125,11 @@ class CurrentFileInfo:
 
 class HelpClass:
     def __init__(self):
+        self.generated = False
+        self.download_enabled = False
+        self.freeze_noise = [False] * 4
+
+    def reset(self):
         self.generated = False
         self.download_enabled = False
         self.freeze_noise = [False] * 4
@@ -249,31 +272,72 @@ current_file = CurrentFileInfo()
 help_class = HelpClass()
 
 @app.route('/', methods=['POST', 'GET'])
-def home():
+def auth():
     if request.method == 'POST':
         try:
             password = request.form["password"]
             login = request.form["login"]
 
-            user_is_exists = db.session.execute(text(f"SELECT COUNT(*) FROM user WHERE user_login == :login"), {"login": login}).all()
+            user_is_exists = db.session.execute(text(f"SELECT COUNT(*) "
+                                                     f"FROM user "
+                                                     f"WHERE user_login == :login"),
+                                                {"login": login}).all()
             if (user_is_exists[0][0] == 0):
-                return render_template("auth.html", message="user_not_exists")
+                return render_template("auth.html",
+                                       message="user_not_exists")
             else:
-                user_password = db.session.execute(text(f"SELECT user_password FROM user WHERE user_login == :login"), {"login": login}).all()
+                user_password = db.session.execute(text(f"SELECT user_password "
+                                                        f"FROM user "
+                                                        f"WHERE user_login == :login"),
+                                                   {"login": login}).all()
                 if check_password_hash(user_password[0][0], password):
-                    user_id = db.session.execute(text(f"SELECT user_id FROM user WHERE user_login == :login"), {"login": login}).all()
-                    user_name = db.session.execute(text(f"SELECT user_name FROM user WHERE user_login == :login"), {"login": login}).all()
-                    generation_cost = db.session.execute(text(f"SELECT generation_cost FROM user JOIN tariff USING(tariff_id) WHERE user_login == :login"), {"login": login}).all()
-                    creation_date = db.session.execute(text(f"SELECT creation_date FROM user WHERE user_login == :login"), {"login": login}).all()
-                    count_generated_files = db.session.execute(text(f"SELECT COUNT(*) FROM user JOIN files USING(user_id) WHERE user_login == :login"), {"login": login}).all()
-                    count_tokens_per_minute = db.session.execute(text(f"SELECT count_tokens_per_minute FROM user JOIN tariff USING(tariff_id) WHERE user_login == :login"), {"login": login}).all()
-                    current_user.set_new_user_info(user_id[0][0], user_name[0][0], login, 0, generation_cost[0][0], creation_date[0][0], count_generated_files[0][0], count_tokens_per_minute[0][0])
-                    current_file.set_new_file_info(None, None, user_id, None, None, None)
+                    current_user.reset()
+                    current_file.reset()
+                    help_class.reset()
+
+                    user_id = db.session.execute(text(f"SELECT user_id "
+                                                      f"FROM user "
+                                                      f"WHERE user_login == :login"),
+                                                 {"login": login}).all()
+                    user_name = db.session.execute(text(f"SELECT user_name "
+                                                        f"FROM user "
+                                                        f"WHERE user_login == :login"),
+                                                   {"login": login}).all()
+                    generation_cost = db.session.execute(text(f"SELECT generation_cost "
+                                                              f"FROM user "
+                                                              f"  JOIN tariff USING(tariff_id) "
+                                                              f"WHERE user_login == :login"),
+                                                         {"login": login}).all()
+                    creation_date = db.session.execute(text(f"SELECT creation_date "
+                                                            f"FROM user "
+                                                            f"WHERE user_login == :login"),
+                                                       {"login": login}).all()
+                    count_generated_files = db.session.execute(text(f"SELECT COUNT(*) "
+                                                                    f"FROM user "
+                                                                    f"  JOIN files USING(user_id) "
+                                                                    f"WHERE user_login == :login"),
+                                                               {"login": login}).all()
+                    count_tokens_per_minute = db.session.execute(text(f"SELECT count_tokens_per_minute "
+                                                                      f"FROM user "
+                                                                      f"  JOIN tariff USING(tariff_id) "
+                                                                      f"WHERE user_login == :login"),
+                                                                 {"login": login}).all()
+                    current_user.set_new_user_info(user_id[0][0], user_name[0][0],
+                                                   login, 0, generation_cost[0][0],
+                                                   creation_date[0][0], count_generated_files[0][0],
+                                                   count_tokens_per_minute[0][0])
+                    current_file.set_new_file_info(None, None,
+                                                   user_id, None,
+                                                   None, None)
+
                     return redirect("/main")
                 else:
-                    return render_template("auth.html", message="invalid_password", login=login)
+                    return render_template("auth.html",
+                                           message="invalid_password",
+                                           login=login)
         except:
-            return render_template("auth.html", message="invalid_data")
+            return render_template("auth.html",
+                                   message="invalid_data")
     else:
         return render_template("auth.html")
 
@@ -384,13 +448,19 @@ def lk_history():
     if request.method == 'POST':
         try:
             filename = request.form["filename"]
-            user_files_path = os.path.join("./static/files", current_user.user_login)
-            return send_file(os.path.join(user_files_path, filename), as_attachment=True)
+            user_files_path = os.path.join("./static/files",
+                                           current_user.user_login)
+            return send_file(os.path.join(user_files_path,
+                                          filename),
+                             as_attachment=True)
         except:
             return redirect("/")
     else:
-        files = Files.query.order_by(Files.generation_date.desc()).where(Files.user_id == current_user.user_id).all()
-        return render_template("lk_history.html", tokens=current_user.user_current_tokens, files=files)
+        files = Files.query.order_by(Files.generation_date.desc()).where(
+            Files.user_id == current_user.user_id).all()
+        return render_template("lk_history.html",
+                               tokens=current_user.user_current_tokens,
+                               files=files)
 
 @app.route('/lk_settings', methods=['POST', 'GET'])
 def lk_settings():
@@ -399,7 +469,8 @@ def lk_settings():
             username = request.form["username"]
             password = request.form["password"]
 
-            if (username != "" and username is not None) or (password != "" and password is not None):
+            if ((username != "" and username is not None) or
+                    (password != "" and password is not None)):
                 user = User.query.get(current_user.user_id)
                 if (username != "" and username is not None):
                     current_user.update_username(username)
@@ -412,8 +483,13 @@ def lk_settings():
         except:
             return redirect("/lk_settings")
     else:
-        user_name = f", {current_user.user_name}" if (current_user.user_name != "" and current_user.user_name is not None) else ""
-        return render_template("lk_settings.html", tokens=current_user.user_current_tokens, user_name=user_name)
+        user_name = f", {current_user.user_name}" if \
+            (current_user.user_name != "" and
+             current_user.user_name is not None) \
+            else ""
+        return render_template("lk_settings.html",
+                               tokens=current_user.user_current_tokens,
+                               user_name=user_name)
 
 
 
